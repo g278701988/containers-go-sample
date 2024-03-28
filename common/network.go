@@ -18,7 +18,7 @@ func ReadHttpIP(r *http.Request) string {
 	log.Printf("ReadHttpIP X-Real-Ip:%v\n", IPAddress)
 	if IPAddress == "" {
 		IPAddress = r.Header.Get("X-Forwarded-For")
-		IPAddress = strings.Split(IPAddress,",")
+		IPAddress = strings.Split(IPAddress, ",")[0]
 		log.Printf("ReadHttpIP X-Forwarded-For:%v\n", IPAddress)
 	}
 	if IPAddress == "" {
