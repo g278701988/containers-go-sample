@@ -15,12 +15,14 @@ type AllowIP struct {
 // ReadHttpIP
 func ReadHttpIP(r *http.Request) string {
 	IPAddress := r.Header.Get("X-Real-Ip")
-
+	log.Printf("ReadHttpIP X-Real-Ip:%v\n", IPAddress)
 	if IPAddress == "" {
 		IPAddress = r.Header.Get("X-Forwarded-For")
+		log.Printf("ReadHttpIP X-Forwarded-For:%v\n", IPAddress)
 	}
 	if IPAddress == "" {
 		IPAddress = r.RemoteAddr
+		log.Printf("ReadHttpIP RemoteAddr:%v\n", IPAddress)
 	}
 	delimiterIndex := strings.Index(IPAddress, `:`)
 	if IPAddress != "" && delimiterIndex != -1 {
