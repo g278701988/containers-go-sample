@@ -4,9 +4,12 @@ import (
 	"archive/zip"
 	"common/common"
 	"compress/flate"
+	"embed"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
@@ -15,6 +18,9 @@ import (
 	"strings"
 	"time"
 )
+
+//go:embed templates/*
+var gTemplatesEmbedscontent embed.FS
 
 var errInvalidWrite = errors.New("invalid write result")
 var ErrShortWrite = errors.New("short write")
@@ -403,6 +409,14 @@ func Start(port string) {
 
 	mux := http.NewServeMux()
 
+	fs := http.FileServer(getSubFileSystem(gTemplatesEmbedscontent, "templates/tts"))
+	mux.Handle("/tts/", http.StripPrefix("/tts/", fs))
+
+	scripts := http.FileServer(getSubFileSystem(gTemplatesEmbedscontent, "templates/scripts"))
+	mux.Handle("/scripts/", http.StripPrefix("/scripts/", scripts))
+
+	mux.HandleFunc("/JapaneseSyllabaries", JapaneseSyllabaries)
+
 	mux.Handle("/tmpfiles/", bannedIPHandler(http.StripPrefix("/tmpfiles/", http.FileServer(http.Dir(getTmpFolderAbsPath())))))
 	mux.Handle("/downloadUrl", bannedIPHandler(downloadFile(processingChannel)))
 	mux.Handle("/search", bannedIPHandler(search()))
@@ -428,6 +442,20 @@ func Start(port string) {
 	}
 
 }
+func getSubFileSystem(parentFS fs.FS, dir string) http.FileSystem {
+	fsys, err := fs.Sub(parentFS, dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return http.FS(fsys)
+}
+func JapaneseSyllabaries(responseWriter http.ResponseWriter, request *http.Request) {
+
+	t := template.Must(template.ParseFS(gTemplatesEmbedscontent, "templates/*.html"))
+	t.Execute(responseWriter, nil)
+
+}
+
 func updateProcess(processingChannel chan MessageUnit) {
 	statusList := make(map[string]DownloadProcess)
 	for {
@@ -472,10 +500,11 @@ func bannedIPHandler(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
-func redirectTLS() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Connection", "close")
-		url := "https://" + r.Host + r.URL.String()
-		http.Redirect(w, r, url, http.StatusMovedPermanently)
-	})
-}
+
+// func redirectTLS() http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		w.Header().Set("Connection", "close")
+// 		url := "https://" + r.Host + r.URL.String()
+// 		http.Redirect(w, r, url, http.StatusMovedPermanently)
+// 	})
+// }
