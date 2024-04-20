@@ -414,7 +414,7 @@ func Start(port string) {
 
 	scripts := http.FileServer(getSubFileSystem(gTemplatesEmbedscontent, "templates/scripts"))
 	mux.Handle("/scripts/", http.StripPrefix("/scripts/", scripts))
-
+	mux.HandleFunc("/favicon.ico", favicon)
 	mux.HandleFunc("/JapaneseSyllabaries", JapaneseSyllabaries)
 
 	mux.Handle("/tmpfiles/", bannedIPHandler(http.StripPrefix("/tmpfiles/", http.FileServer(http.Dir(getTmpFolderAbsPath())))))
@@ -501,10 +501,26 @@ func bannedIPHandler(h http.Handler) http.Handler {
 	})
 }
 
-// func redirectTLS() http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		w.Header().Set("Connection", "close")
-// 		url := "https://" + r.Host + r.URL.String()
-// 		http.Redirect(w, r, url, http.StatusMovedPermanently)
-// 	})
-// }
+//	func redirectTLS() http.Handler {
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//			w.Header().Set("Connection", "close")
+//			url := "https://" + r.Host + r.URL.String()
+//			http.Redirect(w, r, url, http.StatusMovedPermanently)
+//		})
+//	}
+//
+//go:embed templates/favicon.ico
+var gFaviconEmbedBytes []byte
+
+func favicon(responseWriter http.ResponseWriter, request *http.Request) {
+	// fmt.Fprintln(responseWriter, "data:image/png;base64,"+gFaviconBase64Data)
+	responseWriter.Header().Set("Content-Typee", "image/png")
+	// bytes, err := ioutil.ReadFile(getRunningPath() + "/templates/favicon.ico")
+	if gFaviconEmbedBytes != nil {
+		responseWriter.Write(gFaviconEmbedBytes)
+	} else {
+		responseWriter.Write([]byte("can not find favicon file"))
+	}
+	// responseWriter.Write(bytes)
+
+}
